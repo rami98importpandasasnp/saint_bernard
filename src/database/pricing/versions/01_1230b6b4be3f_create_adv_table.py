@@ -20,22 +20,47 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
 
-    op.execute("CREATE SCHEMA inventory;")
+    op.execute("CREATE SCHEMA price;")
+    op.create_table(
+        "client",
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("name", sa.Integer, nullable=False),
+        sa.Column("fiscale_code", sa.Integer, nullable=False),
+        sa.Column("address", sa.Float, nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_client")),
+        schema="price",
+    )
+    op.create_table(
+        "platform",
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("name", sa.Text),
+        schema="price",
+    )
+
     op.create_table(
         "channel",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("platform", sa.Text, nullable=False),
+        sa.Column("client_id", sa.Integer, nullable=False),
+        sa.Column("platform_id", sa.Integer, nullable=False),
         sa.Column("posts", sa.Integer, nullable=True),
         sa.Column("likes", sa.Integer, nullable=True),
-        sa.Column("comments", sa.Integer, nullable=True),
         sa.Column("comments", sa.Integer, nullable=True),
         sa.Column("interactions", sa.Integer, nullable=True),
         sa.Column("reactions", sa.Integer, nullable=True),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_role")),
-        schema="inventory",
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_channel")),
+        sa.ForeignKeyConstraint(
+            ["client_id"], ["price.client.id"], name="fk_channel_client_ids"
+        ),
+        sa.ForeignKeyConstraint(
+            ["platform_id"], ["price.platform.id"], name="fk_channel_platform_ids"
+        ),
+        schema="price",
     )
     op.create_table(
         "adv",
@@ -45,7 +70,7 @@ def upgrade() -> None:
         sa.Column("name", sa.Text, nullable=False),
         sa.Column("description", sa.Text, nullable=False),
         sa.Column("game_time", sa.Text, nullable=True),
-        sa.Column("channel_ids", sa.ARRAY(sa.Integer()), nullable=True),
+        sa.Column("platform_id", sa.Integer, nullable=True),
         sa.Column("duration", sa.Integer, nullable=True),
         sa.Column("visibility", sa.Integer, nullable=True),
         sa.Column("engagement", sa.Integer, nullable=True),
@@ -53,46 +78,57 @@ def upgrade() -> None:
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_role")),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_adv")),
         sa.ForeignKeyConstraint(
-            ["channel_ids"], ["channel.id"], name="fk_adv_channel_ids"
+            ["platform_id"], ["price.platform.id"], name="fk_adv_platform_ids"
         ),
-        schema="inventory",
+        schema="price",
     )
 
     op.create_table(
-        "client",
+        "sale",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("name", sa.Integer, nullable=False),
-        sa.Column("fiscale_code", sa.Integer, nullable=False),
-        sa.Column("address", sa.Float, nullable=False),
-        sa.Column("channel_ids", sa.ARRAY(sa.Integer()), nullable=True),
+        sa.Column("client_id", sa.Integer, nullable=False),
+        sa.Column("adv_id", sa.Integer, nullable=False),
+        sa.Column("amount", sa.Integer, nullable=False),
+        sa.Column("price", sa.Float, nullable=False),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_role")),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_sale")),
+        sa.ForeignKeyConstraint(["adv_id"], ["price.adv.id"], name="fk_sale_adv_ids"),
         sa.ForeignKeyConstraint(
-            ["channel_ids"], ["channel.id"], name="fk_client_channel_ids"
+            ["client_id"], ["price.client.id"], name="fk_sale_client_ids"
         ),
-        schema="inventory",
+        schema="price",
     )
 
     op.create_table(
-        "price",
+        "inventory",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("adv_id", sa.Integer, nullable=False),
         sa.Column("client_id", sa.Integer, nullable=False),
         sa.Column("grade", sa.Integer, nullable=False),
         sa.Column("price", sa.Float, nullable=False),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
-        schema="inventory",
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_inventory")),
+        sa.ForeignKeyConstraint(
+            ["adv_id"], ["price.adv.id"], name="fk_inventory_adv_ids"
+        ),
+        sa.ForeignKeyConstraint(
+            ["client_id"], ["price.client.id"], name="fk_inventory_client_ids"
+        ),
+        schema="price",
     )
 
 
 def downgrade() -> None:
-    op.execute("DROP SCHEMA inventory;")
+    op.execute("DROP SCHEMA price;")
     op.drop_table("channel")
     op.drop_table("adv")
     op.drop_table("client")
-    op.drop_table("price")
+    op.drop_table("sale")
+    op.drop_table("inventory")
+    op.drop_table("platform")
