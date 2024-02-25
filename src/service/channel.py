@@ -7,5 +7,5 @@ def get_all_channel_by_client(client_id: int) -> list[Channel]:
     return data.get_all_channel_by_client(client_id)
 
 
-def get_channel(name: str) -> Channel:
-    return data.get_channel(name)
+def get_single_channel_by_client(client_id: int, channe: str) -> Channel:
+    return data.get_single_channel_by_client(client_id, channe)

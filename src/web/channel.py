@@ -12,6 +12,6 @@ def get_all_channel_by_client(client_id: int) -> list[Channel]:
     return service.get_all_channel_by_client(client_id)
 
 
-@router.get("/{name}")
-def get_channel(name) -> list[Channel]:
-    return service.get_channel(name)
+@router.get("/{client_id}/{channel}")
+def get_single_channel_by_client(client_id: int, channel: str) -> Channel:
+    return service.get_single_channel_by_client(client_id, channel)

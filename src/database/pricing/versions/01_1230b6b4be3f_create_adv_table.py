@@ -24,9 +24,9 @@ def upgrade() -> None:
     op.create_table(
         "client",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("name", sa.Integer, nullable=False),
-        sa.Column("fiscale_code", sa.Integer, nullable=False),
-        sa.Column("address", sa.Float, nullable=False),
+        sa.Column("name", sa.Text, nullable=False),
+        sa.Column("fiscale_code", sa.Text, nullable=False),
+        sa.Column("address", sa.Text, nullable=False),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
@@ -55,10 +55,18 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_channel")),
         sa.ForeignKeyConstraint(
-            ["client_id"], ["price.client.id"], name="fk_channel_client_ids"
+            ["client_id"],
+            ["price.client.id"],
+            name="fk_channel_client_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["platform_id"], ["price.platform.id"], name="fk_channel_platform_ids"
+            ["platform_id"],
+            ["price.platform.id"],
+            name="fk_channel_platform_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         schema="price",
     )
@@ -80,7 +88,11 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_adv")),
         sa.ForeignKeyConstraint(
-            ["platform_id"], ["price.platform.id"], name="fk_adv_platform_ids"
+            ["platform_id"],
+            ["price.platform.id"],
+            name="fk_adv_platform_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         schema="price",
     )
@@ -96,9 +108,19 @@ def upgrade() -> None:
             "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_sale")),
-        sa.ForeignKeyConstraint(["adv_id"], ["price.adv.id"], name="fk_sale_adv_ids"),
         sa.ForeignKeyConstraint(
-            ["client_id"], ["price.client.id"], name="fk_sale_client_ids"
+            ["adv_id"],
+            ["price.adv.id"],
+            name="fk_sale_adv_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["client_id"],
+            ["price.client.id"],
+            name="fk_sale_client_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         schema="price",
     )
@@ -115,20 +137,72 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_inventory")),
         sa.ForeignKeyConstraint(
-            ["adv_id"], ["price.adv.id"], name="fk_inventory_adv_ids"
+            ["adv_id"],
+            ["price.adv.id"],
+            name="fk_inventory_adv_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["client_id"], ["price.client.id"], name="fk_inventory_client_ids"
+            ["client_id"],
+            ["price.client.id"],
+            name="fk_inventory_client_ids",
+            on_update="CASCADE",
+            on_delete="CASCADE",
         ),
         schema="price",
     )
 
 
 def downgrade() -> None:
-    op.execute("DROP SCHEMA price;")
-    op.drop_table("channel")
-    op.drop_table("adv")
-    op.drop_table("client")
-    op.drop_table("sale")
-    op.drop_table("inventory")
-    op.drop_table("platform")
+    op.drop_constraint(
+        constraint_name="fk_channel_client_ids",
+        table_name="channel",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_channel_platform_ids",
+        table_name="channel",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_adv_platform_ids",
+        table_name="adv",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_sale_adv_ids",
+        table_name="sale",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_sale_client_ids",
+        table_name="sale",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_inventory_adv_ids",
+        table_name="inventory",
+        schema="price",
+        type_="foreignkey",
+    )
+    op.drop_constraint(
+        constraint_name="fk_inventory_client_ids",
+        table_name="inventory",
+        schema="price",
+        type_="foreignkey",
+    )
+
+    op.drop_table("client", schema="price")
+    op.drop_table("platform", schema="price")
+    op.drop_table("channel", schema="price")
+    op.drop_table("adv", schema="price")
+    op.drop_table("sale", schema="price")
+    op.drop_table("inventory", schema="price")
+
+    op.execute("DROP SCHEMA price cascade;")
